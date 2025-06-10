@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+
 import User from "../models/user.model.js";
  
 export const signup = async (req, res) => {
@@ -11,7 +13,7 @@ export const signup = async (req, res) => {
         }
 
         //authentication
-        
+
 
         const user = await User.create({ name, email, password });
         res.status(201).json({
