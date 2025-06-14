@@ -20,8 +20,16 @@ const PORT = process.env.PORT || 5000;
 //Routes
 app.use("/api/auth", router);
 
-app.listen(PORT, () => {
-  console.log("Server running on port http://localhost:"+PORT);
-  connectDB();
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log("Server running on port http://localhost:"+PORT);
+    });
+  } catch (error) {
+    console.error("Failed to connect to the database", error);
+    process.exit(1);
+  }
+};
 
+startServer();
