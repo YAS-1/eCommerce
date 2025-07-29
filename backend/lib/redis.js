@@ -1,6 +1,9 @@
-import Redis from "ioredis"
-import dotenv from "dotenv"
+import { Redis } from '@upstash/redis'
+import dotenv from "dotenv";
 
-dotenv.config( )
+dotenv.config();
 
-export const redis = new Redis( process.env.UPSTASH_REDIS_URL);
+export const redis = new Redis({
+  url: 'https://shining-toad-60595.upstash.io',
+  token: process.env.UPSTASH_REDIS_TOKEN,
+})
