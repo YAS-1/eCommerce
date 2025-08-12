@@ -109,7 +109,10 @@ export const logout = async (req, res) => {
 //refresh access token 
 export const refreshAccessToken = async (req, res) => {
     try{
-
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken){
+            return res.status(401).json({ message: "Unauthorized"});
+        }
     }
     catch(error){
         res.status(500).json({ message: `Error refreshing access token: ${error.message}`});
