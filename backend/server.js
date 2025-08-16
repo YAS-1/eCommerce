@@ -3,7 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
-import router from "./routes/auth.route.js"
+import authRoutes from "./routes/auth.route.js"
+import productRoutes from "./routes/product.route.js"
 
 import { connectDB } from "./config/db.config.js";
 
@@ -21,7 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 5000;
 
 //Routes
-app.use("/api/auth", router);
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
 
 const startServer = async () => {
   try {
