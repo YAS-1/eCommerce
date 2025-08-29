@@ -1,6 +1,19 @@
 {
-    "cSpell.words": [
+    "media.player": {
+        
+        "players": [
+
+            {    "name": "My VLC player",
+                "type": "vlc",
+
+                "password": "Pennyworth45#",
+                "port": 8080
+            }
+
+        ]
+    },
+        "cSpell.words": [
         "minilength",
         "qodo"
-    ]
+    ],
 }
