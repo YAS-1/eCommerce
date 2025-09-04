@@ -10,7 +10,7 @@ productRoutes.post("/", protectRoute, adminRoute, createProduct); //create produ
 productRoutes.delete("/:id", protectRoute, adminRoute, deleteProduct); //delete product
 productRoutes.get("/recommendations", getRecommendedProducts); //get recommended products
 productRoutes.get("/category/:category", getProductsByCategory); //get products by category
-productRoutes.patch("/:id", protectRoute, adminRoute, toggleFeaturedProduct);
+productRoutes.patch("/:id", protectRoute, adminRoute, toggleFeaturedProduct); // to add a product to the featured
 
 
 export default productRoutes;
