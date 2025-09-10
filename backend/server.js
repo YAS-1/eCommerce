@@ -1,8 +1,10 @@
+// import modules
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
+//import routes
 import authRoutes from "./routes/auth.route.js"
 import productRoutes from "./routes/product.route.js"
 import cartRoutes from "./routes/cart.routes.js"
