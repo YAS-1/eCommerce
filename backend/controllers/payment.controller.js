@@ -2,6 +2,7 @@ import Coupon from "../models/coupon.model.js";
 import { stripe } from "../config/stripe.js";
 
 
+// creating the checkout session controller
 export const createCheckoutSession = async (req, res) => {
     try{
         const {products, couponCode} = req.body;
@@ -10,9 +11,9 @@ export const createCheckoutSession = async (req, res) => {
             return rws.status(400).json({error: "Invalid or empty products array"});
         }
 
-        let totalAmount = 0; // initial total amount
+        let totalAmount = 0; // initial Totalamount
 
-        // map function to map through all the products in the cart and calculate the total amount
+        // The map function to map through all the products in the cart and calculate the total amount
         const lineItems = products.map(product => {
             const amount = Math.round(product.price * 100) // stripe takes the amount in cents
             totalAmount += amount * product.quantity

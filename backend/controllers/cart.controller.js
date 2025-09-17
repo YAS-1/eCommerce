@@ -1,8 +1,7 @@
 import User from "../models/user.model.js";
 import Product from "../models/product.model.js";
 
-//add to cart
-
+//add to controller
 export const addToCart =  async (req, res) => {
     try {
         const {productId} = req.body; // product id of the target product
@@ -23,7 +22,7 @@ export const addToCart =  async (req, res) => {
     }
 }
 
-// remove all form cart
+// remove from cart controller
 export const removeAllFromCart = async (req, res) =>{
     try {
         const {productId} = req.body; // product id of the target product
@@ -45,7 +44,7 @@ export const removeAllFromCart = async (req, res) =>{
 };
 
 
-//Update quantity
+//Update quantity controller
 export const updateQuantity = async (req, res) =>{
     try {
         const { id: productId } = req.params; // product id of the target product
@@ -74,7 +73,7 @@ export const updateQuantity = async (req, res) =>{
     }
 }
 
-//getAll cart products
+//getAll cart products controller
 export const getAllCartItems = async (req, res) => {
     try {
         const products = await Product.find({_id: { $in: req.user.cartItems }});

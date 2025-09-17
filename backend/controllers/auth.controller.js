@@ -9,7 +9,7 @@ const storeRefreshToken = async (userId, refreshToken) => {
 };
 
 
-//signup function
+//signup controller
 export const signup = async (req, res) => {
     try {
         const { email, password, name} = req.body //object destructing
@@ -49,7 +49,7 @@ export const signup = async (req, res) => {
 };
 
 
-//login function
+//login controller
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -88,7 +88,7 @@ export const login = async (req, res) => {
 };
 
 
-//logout function
+//logout controller
 export const logout = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
