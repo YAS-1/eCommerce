@@ -7,6 +7,8 @@ const analyticsRoutes = express.Router();
 analyticsRoutes.get("/", protectRoute, adminRoute, async(req, res) => {
     try {
         const analyticsData = await getAnalyticsData();
+
+        
     }
     catch (error) {
         console.log("Error getting analytics", error.message);
