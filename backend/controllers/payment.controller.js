@@ -1,5 +1,5 @@
 import Coupon from "../models/coupon.model.js";
-import Order from "../models/order.model.js";
+import Order from "../models/orders.model.js";
 import { stripe } from "../config/stripe.js";
 
 

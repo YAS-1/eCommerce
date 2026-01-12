@@ -137,3 +137,14 @@ export const refreshAccessToken = async (req, res) => {
     }
 }
 
+
+// get a user's profile
+
+export const getProfile = async (req, res) => {
+    try {
+        res.json(req.user);
+    } catch (error) {
+        console.log("Error getting profile", error.message);
+        res.status(500).json({ message: "Error getting profile", error: error.message });
+    }
+}
