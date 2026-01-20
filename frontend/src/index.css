@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* index.css or App.css */
+.stylish-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600; /* optional: 300-700 depending on Google Font weights you loaded */
+  font-size: 2rem; /* same as text-2xl */
+  color: #10b981; /* emerald-400 */
+  letter-spacing: 0.05em; /* optional tracking */
+}
