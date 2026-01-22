@@ -159,7 +159,7 @@ const SignUpPage = () => {
           <p className='mt-8 text-center text-sm text-gray-400'>
             Already have an account?{' '}
             <Link to={"/login"} className='font-medium text-emerald-500 hover:text-emerald-300'>
-              Login <ArrowRight className='inline w-4 h-4'/>
+              Login here <ArrowRight className='inline w-4 h-4'/>
             </Link>
           </p>
 
