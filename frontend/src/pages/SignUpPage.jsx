@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { UserPlus, Mail, Lock, User, ArrowRight, Loader } from 'lucide-react'
 import { motion } from 'framer-motion'; {/*For animation*/}
 
+import { useUserStore } from '../stores/useUserStore';
+
 const SignUpPage = () => {
-  const loading = false;
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -13,10 +15,14 @@ const SignUpPage = () => {
     confirmPassword: ""
   });
 
+  // the signup function from the useUserStore
+  const { signup, loading } = useUserStore();
+
+
   {/*Form Handler to handle form submission and change*/}
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+    signup(formData);
   }
   return (
     <div className='flex flex-col justify-center py-12 sm:px-6 lg:px-8'>

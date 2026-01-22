@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import SignUpPage from './pages/SignUpPage.jsx'
 import Navbar from './components/Navbar.jsx'
+import { Toaster } from 'react-hot-toast'
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
           <Route path="/signup" element={<SignUpPage />} />
         </Routes>
       </div>
+      <Toaster/>
     </div>
   )
 }
