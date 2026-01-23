@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-
+// couponSchema model
 const couponSchema = new mongoose.Schema({
     code:{
         type: String,
