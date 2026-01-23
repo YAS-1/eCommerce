@@ -6,10 +6,12 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 
 const authRoutes = express.Router();
 
-authRoutes.post("/signup", signup);
-authRoutes.post("/login", login);
-authRoutes.post("/logout", logout);
-authRoutes.post("/refresh-token", refreshToken);
-authRoutes.get("/profile", protectRoute, getProfile);
+authRoutes.post("/signup", signup); // signup
+authRoutes.post("/login", login);  // login
+authRoutes.post("/logout", logout);  // logout
+authRoutes.post("/refresh-token", refreshToken);  // refresh token
+authRoutes.get("/profile", protectRoute, getProfile);  // get profile
+
+
 
 export default authRoutes;
