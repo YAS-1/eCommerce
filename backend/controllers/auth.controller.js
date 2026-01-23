@@ -1,5 +1,4 @@
 // 
-
 import { redis } from "../lib/redis.js";
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
@@ -35,6 +34,8 @@ const setCookies = (res, accessToken, refreshToken) => {
 	});
 };
 
+// signup controller
+
 export const signup = async (req, res) => {
 	const { email, password, name } = req.body;
 	try {
@@ -63,6 +64,8 @@ export const signup = async (req, res) => {
 	}
 };
 
+
+// login controller
 export const login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
@@ -88,6 +91,8 @@ export const login = async (req, res) => {
 	}
 };
 
+
+// logout controller
 export const logout = async (req, res) => {
 	try {
 		const refreshToken = req.cookies.refreshToken;
@@ -137,6 +142,8 @@ export const refreshToken = async (req, res) => {
 	}
 };
 
+
+// get profile
 export const getProfile = async (req, res) => {
 	try {
 		res.json(req.user);
