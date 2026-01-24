@@ -35,7 +35,6 @@ const setCookies = (res, accessToken, refreshToken) => {
 };
 
 // signup controller
-
 export const signup = async (req, res) => {
 	const { email, password, name } = req.body;
 	try {

@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import axios from '../lib/axios';
 import { toast } from 'react-hot-toast';
+import { response } from 'express';
 
 // creating a user global state store using zustand
 export const useUserStore = create((set, get) => ({
@@ -40,7 +41,18 @@ export const useUserStore = create((set, get) => ({
             set({ loading: false });
             toast.error(error.response.data.message || "An error occurred, please try again");
         }
-    }
+    }, 
 
+    // check auth
+    checkAuth: async () => {
+        set({ checkingAuth: true });
+        try {
+            const res = await axios.get('/auth/profile');
+            set({ user: res.data, checkingAuth: false });
+        }
+        catch (error) {
+            set({ checkingAuth: false, user: null });
+        }
+    }
 }));
 
