@@ -8,6 +8,7 @@ const categories = [
   { href: "/bags", name: "Bags", imageUrl: "/frontend/public/bags.jpg" }, 
 ]
 
+// Home page
 const HomePage = () => {
   return (
     <div>
