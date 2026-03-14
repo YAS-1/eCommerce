@@ -19,6 +19,7 @@ const LoginPage = () => {
     login(email, password);
   }
 
+  // Login design
   return (
     <div className='flex flex-col justify-center py-12 sm:px-6 lg:px-8'>
       <motion.div className='sm:mx-auto sm:w-full sm:max-w-md'
