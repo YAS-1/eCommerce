@@ -90,7 +90,7 @@ export const logout = async (req, res) => {
 	try {
 		const refreshToken = req.cookies.refreshToken;
 		if (refreshToken) {
-			const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+			jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 		}
 
 		res.clearCookie("accessToken");
