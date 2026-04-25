@@ -1,31 +1,19 @@
-import Order from "../models/orders.model.js";
-import User from "../models/user.model.js";
-import Product from "../models/product.model.js";
+import { db } from "../config/db.config.js";
 
 
 // analytics data
 export const getAnalyticsData = async () => {
-    const  totalUsers = await User.countDocuments(); // count the number of users in the database
-    const totalProducts = await Product.countDocuments(); // count the number of products in the database
-
-    // get the total amount of sales
-    const salesData = await Order.aggregate([
-        {
-            $group: {
-                _id: null, // groups all documents together
-                totalSales: {$sum:1}, // sum of the all the documents (sum of Orders in the database), 1 means true
-                totalRevenue: {$sum: "$totalAmount"} // sum the total revenue
-            }
-        }
-    ])
-    
-    const {totalSales, totalRevenue} = salesData[0] || {totalSales: 0, totalRevenue: 0}; // 
+    const [[usersResult]] = await db.query("SELECT COUNT(*) AS totalUsers FROM users");
+    const [[productsResult]] = await db.query("SELECT COUNT(*) AS totalProducts FROM products");
+    const [[salesResult]] = await db.query(
+      "SELECT COUNT(*) AS totalSales, COALESCE(SUM(total_amount), 0) AS totalRevenue FROM orders"
+    );
 
     return {
-        users:totalUsers,
-        products:totalProducts,
-        totalSales,
-        totalRevenue
+        users: usersResult.totalUsers,
+        products: productsResult.totalProducts,
+        totalSales: salesResult.totalSales,
+        totalRevenue: Number(salesResult.totalRevenue)
     }
 }   
 
@@ -33,34 +21,27 @@ export const getAnalyticsData = async () => {
 // daily sales data
 export const getDailySalesData = async (startDate, endDate) => {
     try {
-        const dailySalesData =  await Order.aggregate([
-        {
-            $match: {
-                createdAt: {
-                    $gte: startDate, // orders created after this date (greater than or equal to)
-                    $lte: endDate // orders created before this date (less than or equal to)
-                },
-            },
-        },
-        {
-            $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                sales: {$sum: 1},
-                revenue: {$sum: "$totalAmount"}
-            }
-        },
-        { $sort: { _id: 1 } }
-    ]);
+        const [dailySalesData] =  await db.query(
+          `SELECT
+            DATE(created_at) AS date,
+            COUNT(*) AS sales,
+            COALESCE(SUM(total_amount), 0) AS revenue
+          FROM orders
+          WHERE created_at >= ? AND created_at <= ?
+          GROUP BY DATE(created_at)
+          ORDER BY DATE(created_at) ASC`,
+          [startDate, endDate]
+        );
 
     const dateArray =  getDatesInRange(startDate, endDate);
     
     return dateArray.map(date => {
-        const foundData = dailySalesData.find(item => item._id === date);
+        const foundData = dailySalesData.find(item => item.date.toISOString().split("T")[0] === date);
 
         return {
             date,
             sales: foundData ? foundData.sales : 0,
-            revenue: foundData ? foundData.revenue : 0
+            revenue: foundData ? Number(foundData.revenue) : 0
         }
     })
     } catch (error) {

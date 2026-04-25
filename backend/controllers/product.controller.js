@@ -1,13 +1,12 @@
-import Product from "../models/product.model.js";
-import { redis } from "../lib/redis.js";
-import cloudinary from "../config/cloudinary.js"
+import cloudinary from "../config/cloudinary.js";
+import { db } from "../config/db.config.js";
 
 
 
 //get all products
 export const getAllProducts = async (req, res) => {
     try {
-        const products = await Product.find({}); // find all products in the database
+        const [products] = await db.query("SELECT * FROM products ORDER BY created_at DESC");
         res.status(200).json(products);
     } catch (error) {
         console.log("Error getting all products", error.message);
@@ -21,20 +20,11 @@ export const getAllProducts = async (req, res) => {
 //get featured products
 export const getFeaturedProducts = async (req, res) => {
     try {
-        let featuredProducts = await redis.get("featured_products");
-        if (featuredProducts) {
-            return res.status(200).json(JSON.parse(featuredProducts));
-        }
-
-        // if not in redis but in mongodb
-        featuredProducts = await Product.find({ isFeatured: true }).lean(); // lean-> returns a javascript object instead of a mongoose object.
+        const [featuredProducts] = await db.query("SELECT * FROM products WHERE is_featured = 1 ORDER BY created_at DESC");
 
         if (!featuredProducts){
             return res.status(404).json({ message: "No featured products found"});
         }
-
-        //store them in redis
-        await redis.set("featured_products", JSON.stringify(featuredProducts));
 
         res.status(200).json(featuredProducts);
         
@@ -55,16 +45,16 @@ export const createProduct = async (req, res) => {
         let cloudinaryResponse = null;
 
         if (image){
-            cloudinaryResponse = await cloudinary.uploader.upload(image, {floder:"product_images"});
+            cloudinaryResponse = await cloudinary.uploader.upload(image, {folder:"product_images"});
         }
 
-        const product = await Product.create({
-            name,
-            description,
-            price,
-            image: cloudinaryResponse ? cloudinaryResponse.secure_url : image,
-            category
-        });
+        const [result] = await db.query(
+            "INSERT INTO products (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)",
+            [name, description, price, cloudinaryResponse ? cloudinaryResponse.secure_url : image, category]
+        );
+
+        const [rows] = await db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [result.insertId]);
+        const product = rows[0];
 
         res.status(201).json(product);
     } catch (error) {
@@ -79,7 +69,8 @@ export const createProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const product = await Product.findByIdAndDelete(id);
+        const [rows] = await db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [id]);
+        const product = rows[0];
 
         if (!product){
             return res.status(404).json({ message: "Product not found"});
@@ -91,15 +82,14 @@ export const deleteProduct = async (req, res) => {
             try {
                 await cloudinary.uploader.destroy(`product_images/${publicId}`);
                 console.log("Image deleted from cloudinary");
-                res.status(200).json({ message: "Product deleted successfully"});
             } catch (error) {
                 console.log("Error deleting image from cloudinary", error.message);
                 res.status(500).json({ message: "Error deleting image from cloudinary", error: error.message });
+                return;
             }
         }
 
-        //delete product from mongodb
-        await Product.findByIdAndDelete(id);
+        await db.query("DELETE FROM products WHERE id = ?", [id]);
         res.status(200).json({ message: "Product deleted successfully"});
 
     } catch (error) {
@@ -112,20 +102,9 @@ export const deleteProduct = async (req, res) => {
 //recommendations system
 export const getRecommendedProducts = async (req, res) => {
     try {
-        const products = await Product.aggregate([
-            {
-                $sample: { size: 3}
-            },
-            {
-                $project:{
-                    _id:1,
-                    name:1,
-                    description:1,
-                    image:1,
-                    price:1,
-                }
-            }
-        ]);
+        const [products] = await db.query(
+            "SELECT id AS _id, name, description, image, price FROM products ORDER BY RAND() LIMIT 3"
+        );
 
         res.status(200).json(products);
     } catch (error) {
@@ -139,7 +118,10 @@ export const getRecommendedProducts = async (req, res) => {
 export const getProductsByCategory = async (req, res) => {
     const { category } = req.params;
     try {
-        const products = await Product.find({ category });
+        const [products] = await db.query(
+            "SELECT * FROM products WHERE category = ? ORDER BY created_at DESC",
+            [category]
+        );
         res.status(200).json(products);
     } catch (error) {
         console.log("Error getting products by category", error.message);
@@ -151,26 +133,19 @@ export const getProductsByCategory = async (req, res) => {
 //add a product to the featured
 export const toggleFeaturedProduct = async (req, res ) => {
     try {
-        const product  = await Product.findById(req.params.id);
-        if (product){
-            product.isFeatured = !product.isFeatured;
-            const updatedProduct = await product.save();
-            await updateFeaturedProductsCache();
-            res.status(200).json(updatedProduct);
-        } else {
+        const [rows] = await db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [req.params.id]);
+        const product = rows[0];
+        if (!product) {
             res.status(404).json({ message: "Product not found"});
+            return;
         }
+
+        const nextFeaturedValue = product.is_featured ? 0 : 1;
+        await db.query("UPDATE products SET is_featured = ? WHERE id = ?", [nextFeaturedValue, req.params.id]);
+        const [updatedRows] = await db.query("SELECT * FROM products WHERE id = ? LIMIT 1", [req.params.id]);
+        res.status(200).json(updatedRows[0]);
     } catch (error) {
         console.log("Error toggling featured product", error.message);
         res.status(500).json({ message: "Error toggling featured product", error: error.message });
-    }
-}
-
-// The updateFeaturedProductsCache function is a helper function that updates the featured products cache in Redis.
-async function updateFeaturedProductsCache() {
-    try {   const featuredProducts = await Product.find({ isFeatured: true }).lean();
-    await redis.set("featured_products", JSON.stringify(featuredProducts));
-    } catch (error) {
-        console.log("Error updating featured products cache", error.message);
     }
 }

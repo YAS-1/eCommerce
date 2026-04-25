@@ -1,6 +1,5 @@
-// 
-import {redis} from "../lib/redis.js";
-import User from "../models/user.model.js";
+import bcrypt from "bcryptjs";
+import { createUser, findUserByEmail } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 
 const generateTokens = (userId) => {
@@ -13,10 +12,6 @@ const generateTokens = (userId) => {
 	});
 
 	return { accessToken, refreshToken };
-};
-
-const storeRefreshToken = async (userId, refreshToken) => {
-	await redis.set(`refresh_token:${userId}`, refreshToken, "EX", 7 * 24 * 60 * 60); // 7days
 };
 
 const setCookies = (res, accessToken, refreshToken) => {
@@ -38,21 +33,21 @@ const setCookies = (res, accessToken, refreshToken) => {
 export const signup = async (req, res) => {
 	const { email, password, name } = req.body;
 	try {
-		const userExists = await User.findOne({ email });
+		const userExists = await findUserByEmail(email);
 
 		if (userExists) {
 			return res.status(400).json({ message: "User already exists" });
 		}
-		const user = await User.create({ name, email, password });
+		const hashedPassword = await bcrypt.hash(password, 10);
+		const user = await createUser({ name, email, password: hashedPassword });
 
 		// authenticate
-		const { accessToken, refreshToken } = generateTokens(user._id);
-		await storeRefreshToken(user._id, refreshToken);
+		const { accessToken, refreshToken } = generateTokens(user.id);
 
 		setCookies(res, accessToken, refreshToken);
 
 		res.status(201).json({
-			_id: user._id,
+			_id: user.id,
 			name: user.name,
 			email: user.email,
 			role: user.role,
@@ -68,15 +63,14 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
-		const user = await User.findOne({ email });
+		const user = await findUserByEmail(email);
 
-		if (user && (await user.comparePassword(password))) {
-			const { accessToken, refreshToken } = generateTokens(user._id);
-			await storeRefreshToken(user._id, refreshToken);
+		if (user && (await bcrypt.compare(password, user.password))) {
+			const { accessToken, refreshToken } = generateTokens(user.id);
 			setCookies(res, accessToken, refreshToken);
 
 			res.json({
-				_id: user._id,
+				_id: user.id,
 				name: user.name,
 				email: user.email,
 				role: user.role,
@@ -97,7 +91,6 @@ export const logout = async (req, res) => {
 		const refreshToken = req.cookies.refreshToken;
 		if (refreshToken) {
 			const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-			await redis.del(`refresh_token:${decoded.userId}`);
 		}
 
 		res.clearCookie("accessToken");
@@ -112,18 +105,13 @@ export const logout = async (req, res) => {
 // this will refresh the access token
 export const refreshToken = async (req, res) => {
 	try {
-		const refreshToken = req.cookies.refreshToken;
+		const incomingRefreshToken = req.cookies.refreshToken;
 
-		if (!refreshToken) {
+		if (!incomingRefreshToken) {
 			return res.status(401).json({ message: "No refresh token provided" });
 		}
 
-		const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-		const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
-
-		if (storedToken !== refreshToken) {
-			return res.status(401).json({ message: "Invalid refresh token" });
-		}
+		const decoded = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
 		const accessToken = jwt.sign({ userId: decoded.userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
 

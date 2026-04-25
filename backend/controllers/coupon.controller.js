@@ -1,9 +1,13 @@
-import Coupon from "../models/coupon.model.js";
+import { db } from "../config/db.config.js";
 
 // getting the coupon
 export const getCoupon = async (req, res) => {
     try {
-        const coupon = await Coupon.findOne({ userId: req.user._id, isActive: true });
+        const [rows] = await db.query(
+            "SELECT * FROM coupons WHERE user_id = ? AND is_active = 1 LIMIT 1",
+            [req.user.id]
+        );
+        const coupon = rows[0];
         if (!coupon) {
             return res.status(404).json({ message: "No active coupon found" });
         }
@@ -20,23 +24,26 @@ export const getCoupon = async (req, res) => {
 //validating the coupon
 export const validateCoupon = async (req, res) => {
     try {
-        const { code } = req.body;
-        const coupon = await Coupon.findOne({ code: code, userId: req.user._id, isActive: true});
+        const code = req.body?.code || req.query?.code;
+        const [rows] = await db.query(
+            "SELECT * FROM coupons WHERE code = ? AND user_id = ? AND is_active = 1 LIMIT 1",
+            [code, req.user.id]
+        );
+        const coupon = rows[0];
 
         if(!coupon){
             return res.status(404).json({ message: "Coupon not found"});
         }
 
-        if(coupon.expirationDate < new Date()){
-            coupon.isActive = false;
-            await coupon.save();
+        if(new Date(coupon.expiration_date) < new Date()){
+            await db.query("UPDATE coupons SET is_active = 0 WHERE id = ?", [coupon.id]);
             return res.status(404).json({ message: "Coupon has expired"});
         }
 
         res.status(200).json({
             message: "Coupon is valid",
             code: coupon.code,
-            discountPercentage: coupon.discountPercentage
+            discountPercentage: coupon.discount_percentage
         });
 
     } catch (error) {

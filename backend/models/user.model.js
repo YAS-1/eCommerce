@@ -1,64 +1,41 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import { db } from "../config/db.config.js";
 
-
-// userSchema model
-const userSchema = new mongoose.Schema({
-    name:{
-        type: String,
-        required: [true, "Please enter your name"]
-    },
-    email:{
-        type: String,
-        required: [true, "Please enter your email"],
-        unique: true,
-        lowercase: true,
-        trim: true
-    },
-    password:{
-        type: String,
-        required: [true, "Please enter your password"],
-        minilength:[6, "Password must be at least 6 characters"]
-    },
-    cartItem:[
-        {
-            quantity:{
-                type: Number,
-                default: 1
-            },
-            product:{
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Product"
-            }
-        }
-    ],
-    role:{
-        type: String,
-        enum: ["customer", "admin"],
-        default: "customer"
-    }
-},{
-    timestamps: true});
-
-
-//Pre save hook to hash passwords before saving to the database
-userSchema.pre("save", async function(next){
-    if(!this.isModified("password")) return next();
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
-//Method to compare passwords
-userSchema.methods.comparePassword = async function (password){
-    return bcrypt.compare(password, this.password);
+export const createUsersTable = async () => {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      role ENUM('customer', 'admin') DEFAULT 'customer',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
 };
 
-const User = mongoose.model("User", userSchema);
+export const findUserByEmail = async (email) => {
+  const [rows] = await db.query("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
+  return rows[0] || null;
+};
 
-export default User;
+export const createUser = async ({ name, email, password, role = "customer" }) => {
+  const [result] = await db.query(
+    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+    [name, email, password, role]
+  );
+  return findUserById(result.insertId);
+};
+
+export const findUserById = async (id) => {
+  const [rows] = await db.query("SELECT * FROM users WHERE id = ? LIMIT 1", [id]);
+  return rows[0] || null;
+};
+
+export const findPublicUserById = async (id) => {
+  const [rows] = await db.query(
+    "SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = ? LIMIT 1",
+    [id]
+  );
+  return rows[0] || null;
+};

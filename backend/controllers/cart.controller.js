@@ -1,21 +1,23 @@
-import User from "../models/user.model.js";
-import Product from "../models/product.model.js";
+import { db } from "../config/db.config.js";
 
 //add to controller
 export const addToCart =  async (req, res) => {
     try {
         const {productId} = req.body; // product id of the target product
-        const user = req.user; // user object from the protectRoute middleware
+        const userId = req.user.id; // user object from the protectRoute middleware
 
-        const existingItem = user.cartItems.find(item => item.id === productId);
-        if (existingItem){
-            existingItem.quantity += 1;
-        }else{
-            user.cartItems.push(productId);
-        }
+        await db.query(
+            `INSERT INTO cart_items (user_id, product_id, quantity)
+             VALUES (?, ?, 1)
+             ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+            [userId, productId]
+        );
 
-        await user.save();
-        res.status(200).json(user.cartItems);
+        const [cartItems] = await db.query(
+            "SELECT product_id AS id, quantity FROM cart_items WHERE user_id = ?",
+            [userId]
+        );
+        res.status(200).json(cartItems);
     } catch (error) {
         console.log("Error adding to cart", error.message);
         res.status(500).json({ message: "Error adding to cart", error: error.message });
@@ -26,16 +28,18 @@ export const addToCart =  async (req, res) => {
 export const removeAllFromCart = async (req, res) =>{
     try {
         const {productId} = req.body; // product id of the target product
-        const user = req.user; // user object from the protectRoute middleware
+        const userId = req.user.id; // user object from the protectRoute middleware
 
         if(!productId){
-            user.cartItems = [];
+            await db.query("DELETE FROM cart_items WHERE user_id = ?", [userId]);
         }else{
-            user.cartItems = user.cartItems.filter(item => item.id !== productId); // filter out the product from the cart Items
+            await db.query("DELETE FROM cart_items WHERE user_id = ? AND product_id = ?", [userId, productId]); // filter out the product from the cart Items
         }
-
-        await user.save();
-        res.status(200).json(user.cartItems);
+        const [cartItems] = await db.query(
+            "SELECT product_id AS id, quantity FROM cart_items WHERE user_id = ?",
+            [userId]
+        );
+        res.status(200).json(cartItems);
 
     } catch (error) {
         console.log("Error removing all from cart", error.message);
@@ -49,23 +53,30 @@ export const updateQuantity = async (req, res) =>{
     try {
         const { id: productId } = req.params; // product id of the target product
         const { quantity } = req.body; // quantity of the product
-        const user = req.user; // user object from the protectRoute middleware
+        const userId = req.user.id; // user object from the protectRoute middleware
 
-        const existingItem = user.cartItems.find(item => item.id === productId);
-        if (existingItem){
-            if(quantity === 0){
-                user.cartItems = user.cartItems.filter(item => item.id !== productId); // filter out the product from the cart Items
-                await user.save();
-                res.status(200).json(user.cartItems);
-            }
+        const [rows] = await db.query(
+            "SELECT * FROM cart_items WHERE user_id = ? AND product_id = ? LIMIT 1",
+            [userId, productId]
+        );
+        const existingItem = rows[0];
 
-            existingItem.quantity = quantity;
-            await user.save();
-            res.status(200).json(user.cartItems);
-
-        } else {
-            res.status(404).json({ message: "Product not found in cart"});
+        if (!existingItem) {
+            res.status(404).json({ message: "Product not found in cart" });
+            return;
         }
+
+        if(quantity === 0){
+            await db.query("DELETE FROM cart_items WHERE user_id = ? AND product_id = ?", [userId, productId]);
+        } else {
+            await db.query("UPDATE cart_items SET quantity = ? WHERE user_id = ? AND product_id = ?", [quantity, userId, productId]);
+        }
+
+        const [cartItems] = await db.query(
+            "SELECT product_id AS id, quantity FROM cart_items WHERE user_id = ?",
+            [userId]
+        );
+        res.status(200).json(cartItems);
 
     } catch (error) {
         console.log("Error updating quantity", error.message);
@@ -76,13 +87,22 @@ export const updateQuantity = async (req, res) =>{
 //getAll cart products controller
 export const getAllCartItems = async (req, res) => {
     try {
-        const products = await Product.find({_id: { $in: req.user.cartItems }});
-
-        //add the quantity for each product
-        const cartItems = products.map((product) => {
-            const item = req.user.cartItems.find((cartItem) => cartItem.id === product.id);
-            return { ...product.toJSON(), quantity: item.quantity };
-        });
+        const [cartItems] = await db.query(
+            `SELECT
+                p.id,
+                p.name,
+                p.description,
+                p.price,
+                p.image,
+                p.category,
+                p.is_featured AS isFeatured,
+                c.quantity
+            FROM cart_items c
+            INNER JOIN products p ON p.id = c.product_id
+            WHERE c.user_id = ?
+            ORDER BY c.updated_at DESC`,
+            [req.user.id]
+        );
 
         res.status(200).json(cartItems);
 

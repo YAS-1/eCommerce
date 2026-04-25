@@ -1,45 +1,30 @@
-import mongoose from "mongoose";
+import { db } from "../config/db.config.js";
 
-// orderSchema model
-const orderSchema = new mongoose.Schema({
-    
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    products: [
-        {
-            product:{
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Product",
-                required: true
-            },
-            quantity:{
-                type: Number,
-                required: true,
-                min: 1
-            },
-            price: {
-                type: Number,
-                required: true,
-                min: 0
-            }
-        }
-    ],
-    totalAmount: {
-        type: Number,
-        required: true,
-        min: 0
-    },
-    stripSessionId: {
-        type: String,
-        required: true
-    }
+export const createOrdersTables = async () => {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      total_amount DECIMAL(10,2) NOT NULL,
+      stripe_session_id VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 
-}, {timestamps: true});
-
-
-const Order = mongoose.model("Order", orderSchema);
-export default Order;
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      product_id INT NOT NULL,
+      quantity INT NOT NULL,
+      price DECIMAL(10,2) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    )
+  `);
+};
 

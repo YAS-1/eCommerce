@@ -13,7 +13,7 @@ import paymentRoutes from "./routes/payment.route.js"
 import analyticsRoutes from "./routes/analytics.route.js"
 
 //import database
-import { connectDB } from "./config/db.config.js";
+import { connectDB, initDatabase } from "./config/db.config.js";
 
 
 dotenv.config();
@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.SERVER_PORT || 5000;
 
 //Routes 
 app.use("/api/auth", authRoutes);
@@ -40,6 +40,7 @@ app.use("/api/analytics", analyticsRoutes);
 const startServer = async () => {
   try {
     await connectDB();
+    await initDatabase();
     app.listen(PORT, () => {
       console.log("Server running on port http://localhost:"+PORT);
     });

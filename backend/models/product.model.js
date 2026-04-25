@@ -1,35 +1,17 @@
-import mongoose from "mongoose";
+import { db } from "../config/db.config.js";
 
-
-// productSchema model
-const productSchema = new mongoose.Schema({
-    name:{
-        type: String,
-        required: true
-    },
-    description:{
-        type: String,
-        required: true
-    },
-    price:{
-        type: Number,
-        min:0,
-        required: true
-    },
-    image:{
-        type: String,
-        required: [true, "Please provide an image"]
-    },
-    category:{
-        type: String,
-        required: true
-    },
-    isFeatured:{
-        type: Boolean,
-        default: false
-    },
-},{timestamps: true});
-
-const Product = mongoose.model("Product", productSchema);
-
-export default Product;
+export const createProductsTable = async () => {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
+      price DECIMAL(10,2) NOT NULL,
+      image TEXT NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      is_featured TINYINT(1) DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+};
